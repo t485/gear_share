@@ -22,6 +22,11 @@ app.use(bodyParser.json());
 app.use(cors());
 app.use(morgan('combined'));
 
+app.get('*', (req, res, next) => {
+  if (req.url.startsWith('/api_v1')) return next();
+  res.sendFile(__dirname + '/index.html');
+});
+
 // anything after this requires authentication
 const checkJwt = jwt({
   secret: jwksRsa.expressJwtSecret({
@@ -95,8 +100,6 @@ db.once('open', () => {
       }
     });
   });
-
-  app.get('*', (req, res) => res.sendFile(__dirname + '/index.html'));
 
   // const httpServer = http.createServer(app);
   // httpServer.listen(8111);
