@@ -20,7 +20,9 @@ const app = express();
 app.use(helmet());
 app.use(bodyParser.json());
 app.use(cors());
-app.use(morgan('combined'));
+
+const logStream = fs.createWriteStream('/root/access.log', { flags: 'a' });
+app.use(morgan('combined', { stream: logStream }));
 
 app.get('*', (req, res, next) => {
   if (req.url.startsWith('/api_v1')) return next();
