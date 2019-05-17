@@ -4,7 +4,7 @@ import Api
 import Browser exposing (Document)
 import Endpoint
 import Html exposing (..)
-import Html.Attributes as Attr
+import Html.Attributes as Attr exposing (class)
 import Http
 import Item exposing (Item, itemsDecoder)
 import Route
@@ -48,7 +48,36 @@ view model =
                 viewItems items
 
             Failed ->
-                text "(home) failed to load items"
+                let
+                    para t =
+                        p [ class "text-red-500 m-8" ] [ text t ]
+                in
+                div [ class "flex-auto container mx-auto" ]
+                    [ para "(home) 1 failed to load items"
+                    , para "(home) 2 failed to load items"
+                    , para "(home) 3 failed to load items"
+                    , para "(home) failed to load items"
+                    , para "(home) failed to load items"
+                    , para "(home) failed to load items"
+                    , para "(home) failed to load items"
+                    , para "(home) failed to load items"
+                    , para "(home) failed to load items"
+                    , para "(home) failed to load items"
+                    , para "(home) failed to load items"
+                    , para "(home) failed to load items"
+                    , para "(home) failed to load items"
+                    , para "(home) failed to load items"
+                    , para "(home) failed to load items"
+                    , para "(home) failed to load items"
+                    , para "(home) failed to load items"
+                    , para "(home) failed to load items"
+                    , para "(home) failed to load items"
+                    , para "(home) failed to load items"
+                    , para "(home) failed to load items"
+                    , para "(home) failed to load items"
+                    , para "(home) failed to load items"
+                    , para "(home) failed to load items"
+                    ]
     }
 
 

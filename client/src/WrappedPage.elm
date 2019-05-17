@@ -3,8 +3,8 @@ module WrappedPage exposing (Page(..), view, viewErrors)
 import Api exposing (Cred)
 import Browser exposing (Document)
 import Endpoint
-import Html exposing (Html, a, button, div, footer, i, img, li, nav, p, span, text, ul)
-import Html.Attributes exposing (class, classList, href, style)
+import Html exposing (..)
+import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import Route exposing (Route)
 import Session exposing (Session)
@@ -38,20 +38,24 @@ view : Maybe Viewer -> Page -> { title : String, content : Html msg } -> Documen
 view maybeViewer page { title, content } =
     { title = title ++ " - Gear"
     , body =
-        [ viewHeader page maybeViewer
-        , content
-        , viewFooter
+        [ div [ class "flex flex-col" ]
+            [ viewHeader page maybeViewer
+            , viewContent content
+            , viewFooter
+            ]
         ]
     }
 
 
 viewHeader : Page -> Maybe Viewer -> Html msg
 viewHeader page maybeViewer =
-    nav [ class "navbar navbar-light" ]
-        [ ul [ class "nav navbar-nav pull-xs-right" ] <|
-            [ li [] [ a [ Route.href Route.Home ] [ text "Home" ] ]
+    header [ class "flex-auto bg-gray-300 fixed top-0 w-full z-20" ]
+        [ nav [ class "flex" ]
+            [ ul [ class "" ] <|
+                [ li [] [ a [ Route.href Route.Home ] [ text "Home" ] ]
+                ]
+                    ++ viewMenu page maybeViewer
             ]
-                ++ viewMenu page maybeViewer
         ]
 
 
@@ -67,6 +71,11 @@ viewMenu page maybeViewer =
             [ li [] [ a [ Route.href <| Route.Login Nothing ] [ text "Login" ] ]
             , span [] [ text "Not logged in" ]
             ]
+
+
+viewContent : Html msg -> Html msg
+viewContent content =
+    div [ class "w-full mx-auto px-6 mt-20" ] [ content ]
 
 
 viewFooter : Html msg
