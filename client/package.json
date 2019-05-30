@@ -1,14 +1,14 @@
 {
   "name": "gear_share",
   "version": "0.0.1",
-  "description": "",
+  "description": "T485 gear share application",
   "main": "index.js",
   "scripts": {
     "start": "concurrently --kill-others \"npm:dev-local*\"",
     "dev-local": "parcel watch ./src/index.html --no-hmr",
     "dev-local-server": "live-server --no-browser --port=8000 --entry-file=index.html ./dist/",
     "dev-exposed": "live-server --no-browser --port=8001 --entry-file=index.html ./dist/",
-    "dev-json-server": "json-server --watch db.json --port=8111",
+    "dev-exposed-server": "concurrently --kill-others \"npm:dev-local\" \"npm:dev-exposed\"",
     "build": "rm -r ./dist/; parcel build --no-minify ./src/index.html",
     "prod": "rm -r ./dist/; parcel build --no-source-maps ./src/index.html"
   },
@@ -17,6 +17,7 @@
   "license": "ISC",
   "dependencies": {
     "@fullhuman/postcss-purgecss": "^1.2.0",
+    "auth0-js": "^9.10.3",
     "json-server": "^0.14.2",
     "live-server": "^1.2.1",
     "parcel": "^1.12.3",
@@ -24,8 +25,10 @@
     "tailwindcss": "^1.0.1"
   },
   "devDependencies": {
+    "@types/auth0-js": "^9.10.2",
     "concurrently": "^4.1.0",
     "cssnano": "^4.1.10",
-    "node-elm-compiler": "^5.0.3"
+    "node-elm-compiler": "^5.0.3",
+    "typescript": "^3.4.5"
   }
 }

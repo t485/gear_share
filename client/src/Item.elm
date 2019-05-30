@@ -1,8 +1,7 @@
 module Item exposing (Id(..), Item, idParser, idToString, itemDecoder, itemsDecoder)
 
 import Json.Decode as Decode exposing (Decoder, list, string)
-import Json.Decode.Pipeline exposing (custom, hardcoded, required)
-import Json.Encode as Encode
+import Json.Decode.Pipeline exposing (custom, required)
 import Url.Parser
 
 

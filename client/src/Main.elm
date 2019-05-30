@@ -4,7 +4,7 @@ import Api
 import Browser exposing (Document)
 import Browser.Navigation as Nav
 import Html
-import Json.Decode as Decode exposing (Value)
+import Json.Decode exposing (Value)
 import Pages.Blank as Blank
 import Pages.Home as Home
 import Pages.Item as Item
@@ -13,7 +13,7 @@ import Route exposing (Route)
 import Session exposing (Session)
 import Url exposing (Url)
 import Viewer exposing (Viewer)
-import WrappedPage exposing (Page)
+import WrappedPage
 
 
 type Model
@@ -42,9 +42,11 @@ init maybeViewer url navKey =
 view : Model -> Document Msg
 view model =
     let
+        -- Gets the viewer from the model
         viewer =
             Session.viewer (toSession model)
 
+        --  Renders the page based on the content, viewer, and the msg
         viewPage page toMsg config =
             let
                 { title, body } =
@@ -73,8 +75,7 @@ view model =
 
 
 type Msg
-    = ChangedRoute (Maybe Route)
-    | ChangedUrl Url
+    = ChangedUrl Url
     | ClickedLink Browser.UrlRequest
     | GotHomeMsg Home.Msg
     | GotLoginMsg Login.Msg
@@ -83,6 +84,8 @@ type Msg
     | NoOp
 
 
+{-| Converts a model to a session
+-}
 toSession : Model -> Session
 toSession page =
     case page of
@@ -117,15 +120,15 @@ changeRouteTo maybeRoute model =
 
         Just Route.Home ->
             Home.init session
-                |> updateWith Home GotHomeMsg model
+                |> updateWith Home GotHomeMsg
 
-        Just (Route.Login maybeCred) ->
-            Login.init session maybeCred
-                |> updateWith Login GotLoginMsg model
+        Just Route.Login ->
+            Login.init session
+                |> updateWith Login GotLoginMsg
 
         Just (Route.Item id) ->
             Item.init session id
-                |> updateWith Item GotItemMsg model
+                |> updateWith Item GotItemMsg
 
         Just Route.Logout ->
             ( model, Api.logout )
@@ -149,16 +152,13 @@ update msg model =
         ( ChangedUrl url, _ ) ->
             changeRouteTo (Route.fromUrl url) model
 
-        ( ChangedRoute route, _ ) ->
-            changeRouteTo route model
-
         ( GotHomeMsg subMsg, Home home ) ->
             Home.update subMsg home
-                |> updateWith Home GotHomeMsg model
+                |> updateWith Home GotHomeMsg
 
         ( GotLoginMsg subMsg, Login login ) ->
             Login.update subMsg login
-                |> updateWith Login GotLoginMsg model
+                |> updateWith Login GotLoginMsg
 
         ( GotSession session, Redirect _ ) ->
             ( Redirect session
@@ -167,15 +167,15 @@ update msg model =
 
         ( GotItemMsg subMsg, Item item ) ->
             Item.update subMsg item
-                |> updateWith Item GotItemMsg model
+                |> updateWith Item GotItemMsg
 
         ( _, _ ) ->
             -- Disregard messages that arrived for the wrong page.
             ( model, Cmd.none )
 
 
-updateWith : (subModel -> Model) -> (subMsg -> Msg) -> Model -> ( subModel, Cmd subMsg ) -> ( Model, Cmd Msg )
-updateWith toModel toMsg model ( subModel, subCmd ) =
+updateWith : (subModel -> Model) -> (subMsg -> Msg) -> ( subModel, Cmd subMsg ) -> ( Model, Cmd Msg )
+updateWith toModel toMsg ( subModel, subCmd ) =
     ( toModel subModel
     , Cmd.map toMsg subCmd
     )

@@ -1,13 +1,17 @@
-module Viewer exposing (Viewer(..), cred, decoder, store, username)
+module Viewer exposing (Viewer(..), cred, decoder, profile, username)
 
-{-| The logged-in user currently viewing this page. It stores enough data to
+{-| Stores enough information to render user-specific items
+
+The logged-in user currently viewing this page. It stores enough data to
 be able to render the menu bar (username and avatar), along with Cred so it's
 impossible to have a Viewer if you aren't logged in.
+
 -}
 
-import Api exposing (Cred)
+import Cred exposing (Cred)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
+import Profile exposing (Profile)
 
 
 
@@ -15,7 +19,7 @@ import Json.Decode.Pipeline exposing (required)
 
 
 type Viewer
-    = Viewer Cred
+    = Viewer Cred Profile
 
 
 
@@ -23,25 +27,26 @@ type Viewer
 
 
 cred : Viewer -> Cred
-cred (Viewer val) =
+cred (Viewer val _) =
     val
 
 
+profile : Viewer -> Profile
+profile (Viewer _ prof) =
+    prof
+
+
 username : Viewer -> String
-username (Viewer val) =
-    Api.username val
+username (Viewer _ prof) =
+    Profile.username prof
 
 
 
 -- SERIALIZATION
 
 
-decoder : Decoder (Cred -> Viewer)
+decoder : Decoder Viewer
 decoder =
     Decode.succeed Viewer
-
-
-store : Viewer -> Cmd msg
-store (Viewer credVal) =
-    Api.storeCredWith
-        credVal
+        |> required "cred" Cred.decoder
+        |> required "profile" Profile.decoder

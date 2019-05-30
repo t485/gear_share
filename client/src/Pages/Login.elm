@@ -1,15 +1,13 @@
 module Pages.Login exposing (Model, Msg, init, subscriptions, toSession, update, view)
 
-import Api exposing (Cred)
-import Browser exposing (Document)
-import Endpoint exposing (loginGoogle, loginPassword)
+import Api
+import Cred exposing (Cred)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Http
-import Route exposing (Route)
+import Route
 import Session exposing (Session)
-import Viewer exposing (Viewer)
+import Viewer
 
 
 
@@ -22,28 +20,37 @@ type alias Model =
     }
 
 
-init : Session -> Maybe Cred -> ( Model, Cmd Msg )
-init session cred =
+init : Session -> ( Model, Cmd Msg )
+init session =
     ( { session = session
-      , cred = cred
+      , cred = Nothing
       }
-    , case cred of
-        Just c ->
-            Viewer.store <| Viewer.Viewer c
-
-        Nothing ->
-            Cmd.none
+    , Cmd.none
     )
 
 
 view : Model -> { title : String, content : Html Msg }
 view model =
+    let
+        loginButton : Cmd Msg -> String -> Html Msg
+        loginButton cmd title =
+            p []
+                [ button
+                    [ onClick (SendCommand cmd)
+                    , style "border" "1px solid cornflowerblue"
+                    , style "border-radius" "5px"
+                    , style "margin" "5px"
+                    , style "padding" "5px"
+                    ]
+                    [ text title ]
+                ]
+    in
     { title = "Login"
     , content =
         div [ class "cred-page" ]
             [ h1 [ class "text-xs-center" ] [ text "Sign in" ]
-            , p [] [ a [ href loginGoogle ] [ text "Sign in with google" ] ]
-            , p [] [ a [ href loginPassword ] [ text "Sign in with email and password" ] ]
+            , loginButton Api.loginGoogle "Sign in with Google"
+            , loginButton Api.loginPassword "Sign in with password"
             ]
     }
 
@@ -54,15 +61,27 @@ view model =
 
 type Msg
     = GotSession Session
+    | SendCommand (Cmd Msg)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GotSession session ->
-            ( { model | session = session }
-            , Route.replaceUrl (Session.navKey session) Route.Home
+            ( { model
+                | session = session
+                , cred =
+                    session
+                        |> Session.viewer
+                        |> Maybe.andThen (Viewer.cred >> Just)
+              }
+              -- TODO: maybe change where to redirect after user has logged in
+              -- , Route.replaceUrl (Session.navKey session) Route.Home
+            , Cmd.none
             )
+
+        SendCommand cmd ->
+            ( model, cmd )
 
 
 

@@ -1,13 +1,10 @@
 module WrappedPage exposing (Page(..), view, viewErrors)
 
-import Api exposing (Cred)
 import Browser exposing (Document)
-import Endpoint
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import Route exposing (Route)
-import Session exposing (Session)
 import Viewer exposing (Viewer)
 
 
@@ -38,7 +35,7 @@ view : Maybe Viewer -> Page -> { title : String, content : Html msg } -> Documen
 view maybeViewer page { title, content } =
     { title = title ++ " - Gear"
     , body =
-        [ div [ class "flex flex-col" ]
+        [ div [ class "" ]
             [ viewHeader page maybeViewer
             , viewContent content
             , viewFooter
@@ -49,28 +46,87 @@ view maybeViewer page { title, content } =
 
 viewHeader : Page -> Maybe Viewer -> Html msg
 viewHeader page maybeViewer =
-    header [ class "flex-auto bg-gray-300 fixed top-0 w-full z-20" ]
-        [ nav [ class "flex" ]
-            [ ul [ class "" ] <|
-                [ li [] [ a [ Route.href Route.Home ] [ text "Home" ] ]
-                ]
-                    ++ viewMenu page maybeViewer
+    header [ class "fixed bg-gray-300 top-0 w-full z-20 shadow-md py-2" ]
+        [ nav [ class "flex flex-row" ]
+            [ ul [ class "flex flex-row flex-grow" ] <| viewNavMenu page
+            , ul [ class "flex flex-row" ] <| viewUserMenu page maybeViewer
             ]
         ]
 
 
-viewMenu : Page -> Maybe Viewer -> List (Html msg)
-viewMenu page maybeViewer =
+viewLogo : Html msg
+viewLogo =
+    div [ class "m-1 mx-8 font-bold text-2xl inline" ]
+        [ span [ class "text-green-600" ] [ text "T" ]
+        , span [] [ text "485" ]
+        ]
+
+
+{-| Renders the page links and highlights the active one
+-}
+viewNavMenu : Page -> List (Html msg)
+viewNavMenu page =
+    let
+        menuItem =
+            viewMenuItem page
+    in
+    [ viewLogo
+    , menuItem Route.Home "Home"
+    , menuItem Route.Home "other Home"
+    ]
+
+
+{-| Renders the menu items that are customized based on the user
+-}
+viewUserMenu : Page -> Maybe Viewer -> List (Html msg)
+viewUserMenu page maybeViewer =
+    let
+        menuItem =
+            viewMenuItem page
+    in
     case maybeViewer of
         Just viewer ->
-            [ li [] [ a [ Route.href Route.Logout ] [ text "Sign out" ] ]
-            , span [] [ text <| "Username: " ++ Viewer.username viewer ]
+            [ menuItem Route.Logout "Sign out"
+            , viewMenuItemText <| "Username: " ++ Viewer.username viewer
             ]
 
         Nothing ->
-            [ li [] [ a [ Route.href <| Route.Login Nothing ] [ text "Login" ] ]
-            , span [] [ text "Not logged in" ]
+            [ menuItem Route.Login "Login"
+            , viewMenuItemText "Not logged in"
             ]
+
+
+viewMenuItemBase : Html msg -> Html msg
+viewMenuItemBase content =
+    li
+        [ class "flex-auto m-3 flex-grow-0" ]
+        [ content ]
+
+
+viewMenuItem : Page -> Route.Route -> String -> Html msg
+viewMenuItem page route linkText =
+    let
+        active =
+            isActive page route
+    in
+    viewMenuItemBase <|
+        a
+            [ class <|
+                "p-2 rounded-lg border-2 hover:bg-gray-100 hover:border-blue-500 trans trans-fast "
+                    ++ (if active then
+                            "border-blue-300"
+
+                        else
+                            ""
+                       )
+            , Route.href route
+            ]
+            [ text linkText ]
+
+
+viewMenuItemText : String -> Html msg
+viewMenuItemText spanText =
+    viewMenuItemBase <| span [] [ text spanText ]
 
 
 viewContent : Html msg -> Html msg
@@ -92,7 +148,7 @@ isActive page route =
         ( Item, Route.Item _ ) ->
             True
 
-        ( Login, Route.Login _ ) ->
+        ( Login, Route.Login ) ->
             True
 
         _ ->

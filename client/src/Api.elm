@@ -1,100 +1,102 @@
-port module Api exposing (Cred(..), application, credHeader, get, logout, storeCredWith, username, viewerChanges)
+port module Api exposing (application, get, loginGoogle, loginPassword, logout, viewerChanges)
+
+{-| Communicates with JS for authentication and constructs requests
+
+This module uses ports to send auth requests to JS, as well as listen for auth
+changes. It also exports an application, which has an init function that is
+passed the viewer on startup.
+
+Requests can be made in this module as well, although that may be split into a
+separate module (TODO)
+
+-}
 
 import Browser
 import Browser.Navigation as Nav
+import Cred exposing (Cred)
 import Endpoint exposing (Endpoint)
-import Http exposing (Body, Expect)
-import Json.Decode as Decode exposing (Decoder, Value, decodeString, field, string)
-import Json.Decode.Pipeline as Pipeline exposing (optional, required)
+import Http exposing (Expect)
+import Json.Decode as Decode exposing (Decoder, Value, string)
 import Json.Encode as Encode
 import Url exposing (Url)
 
 
-{-| Cred is just the access token plus the username
+
+-- PORTS
+
+
+{-| Request to javascript that the auth status be changed
 -}
-type Cred
-    = Cred String String
+port requestAuth : Value -> Cmd msg
 
 
-username : Cred -> String
-username (Cred val _) =
-    val
-
-
-credHeader : Cred -> Http.Header
-credHeader (Cred _ str) =
-    Http.header "authorization" ("Bearer " ++ str)
-
-
-{-| It's important that this is never exposed!
-
-We expose `login` and `application` instead, so we can be certain that if anyone
-ever has access to a `Cred` value, it came from either the login API endpoint
-or was passed in via flags.
-
+{-| Encodes an auth request with a string for the login/logout type (google or password)
 -}
-credDecoder : Decoder Cred
-credDecoder =
-    Decode.succeed Cred
-        |> required "username" Decode.string
-        |> required "token" Decode.string
+authRequestEncoder : String -> Value
+authRequestEncoder type_ =
+    Encode.object
+        [ ( "type", Encode.string type_ ) ]
 
 
-
--- PERSISTENCE
-
-
-decode : Decoder (Cred -> viewer) -> Value -> Result Decode.Error viewer
-decode decoder value =
-    -- It's stored in localStorage as a JSON String;
-    -- first decode the Value as a String, then
-    -- decode that String as JSON.
-    Decode.decodeValue Decode.string value
-        |> Result.andThen (\str -> Decode.decodeString (Decode.field "user" (decoderFromCred decoder)) str)
+{-| Command to redirect user to the login page for google
+-}
+loginGoogle : Cmd msg
+loginGoogle =
+    (authRequestEncoder >> requestAuth) "login_google"
 
 
-port onStoreChange : (Value -> msg) -> Sub msg
+{-| Command to redirect user to the login page for username and password
+-}
+loginPassword : Cmd msg
+loginPassword =
+    (authRequestEncoder >> requestAuth) "login_password"
 
 
-viewerChanges : (Maybe viewer -> msg) -> Decoder (Cred -> viewer) -> Sub msg
-viewerChanges toMsg decoder =
-    onStoreChange (\value -> toMsg <| decodeFromChange decoder value)
-
-
-decodeFromChange : Decoder (Cred -> viewer) -> Value -> Maybe viewer
-decodeFromChange viewerDecoder val =
-    -- It's stored in localStorage as a JSON String;
-    -- first decode the Value as a String, then
-    -- decode that String as JSON.
-    Decode.decodeValue (storageDecoder viewerDecoder) val
-        |> Result.toMaybe
-
-
-storeCredWith : Cred -> Cmd msg
-storeCredWith (Cred uname token) =
-    storeCache <|
-        Just <|
-            Encode.object
-                [ ( "user"
-                  , Encode.object
-                        [ ( "username", Encode.string uname )
-                        , ( "token", Encode.string token )
-                        ]
-                  )
-                ]
-
-
+{-| Command to logout
+-}
 logout : Cmd msg
 logout =
-    storeCache Nothing
+    (authRequestEncoder >> requestAuth) "logout"
+
+
+{-| Receives an auth state change from javascript
+-}
+port receiveAuth : (Value -> msg) -> Sub msg
+
+
+{-| Listens for changes in the viewer received from the `receiveAuth` port.
+Requires a decoder for the viewer and a function to transform it into a msg.
+-}
+viewerChanges : (Maybe viewer -> msg) -> Decoder viewer -> Sub msg
+viewerChanges toMsg decoder =
+    {- let
+           handleError : Result Decode.Error viewer -> Maybe viewer
+           handleError result =
+               case result of
+                   Ok viewer ->
+                       Just viewer
+
+                   Err error ->
+                       let
+                           _ =
+                               Debug.log "viewer decoding error" <| Decode.errorToString error
+                       in
+                       Nothing
+       in
+       receiveAuth (Decode.decodeValue decoder >> handleError >> toMsg)
+    -}
+    receiveAuth (Decode.decodeValue decoder >> Result.toMaybe >> toMsg)
 
 
 
 -- APPLICATION
 
 
+{-| Browser application, except that a viewer decoder must be provided to parse
+the viewer passed in via the flags
+-}
 application :
-    Decoder (Cred -> viewer)
+    Decoder viewer
     ->
         { init : Maybe viewer -> Url -> Nav.Key -> ( model, Cmd msg )
         , onUrlChange : Url -> msg
@@ -107,13 +109,13 @@ application :
 application viewerDecoder config =
     let
         init flags url navKey =
-            let
-                maybeViewer =
-                    Decode.decodeValue Decode.string flags
-                        |> Result.andThen (Decode.decodeString (storageDecoder viewerDecoder))
-                        |> Result.toMaybe
-            in
-            config.init maybeViewer url navKey
+            config.init
+                (flags
+                    |> Decode.decodeValue viewerDecoder
+                    |> Result.toMaybe
+                )
+                url
+                navKey
     in
     Browser.application
         { init = init
@@ -125,22 +127,12 @@ application viewerDecoder config =
         }
 
 
-storageDecoder : Decoder (Cred -> viewer) -> Decoder viewer
-storageDecoder viewerDecoder =
-    Decode.field "user" (decoderFromCred viewerDecoder)
-
-
 
 -- HTTP
 
 
-decoderFromCred : Decoder (Cred -> a) -> Decoder a
-decoderFromCred decoder =
-    Decode.map2 (\fromCred cred -> fromCred cred)
-        decoder
-        credDecoder
-
-
+{-| Base http request given endpoint and cred
+-}
 baseRequest :
     { method : String
     , url : Endpoint
@@ -157,7 +149,7 @@ baseRequest options =
         , headers =
             case options.cred of
                 Just cred ->
-                    [ credHeader cred ]
+                    [ Cred.header cred ]
 
                 Nothing ->
                     []
@@ -167,6 +159,8 @@ baseRequest options =
         }
 
 
+{-| Simple get request
+-}
 get : Endpoint -> Maybe Cred -> Expect msg -> Cmd msg
 get url maybeCred expect =
     baseRequest
@@ -176,10 +170,3 @@ get url maybeCred expect =
         , cred = maybeCred
         , body = Http.emptyBody
         }
-
-
-
--- PERSISTENCE
-
-
-port storeCache : Maybe Value -> Cmd msg

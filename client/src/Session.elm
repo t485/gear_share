@@ -1,7 +1,16 @@
 module Session exposing (Session, changes, cred, fromViewer, navKey, viewer)
 
-import Api exposing (Cred)
+{-| This module stores the login state, viewer, and NavKey
+
+A session is the broadest cross-page state that exists. It represents a
+logged in/guest state, which may wrap a viewer, used for rendering things
+like username. Sessions also contain the NavKey, essential for using links.
+
+-}
+
+import Api
 import Browser.Navigation as Nav
+import Cred exposing (Cred)
 import Viewer exposing (Viewer)
 
 

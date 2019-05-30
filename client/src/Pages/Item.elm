@@ -1,7 +1,6 @@
 module Pages.Item exposing (Model, Msg, init, subscriptions, toSession, update, view)
 
 import Api
-import Browser exposing (Document)
 import Endpoint
 import Html exposing (..)
 import Html.Attributes as Attr
@@ -82,7 +81,7 @@ update msg model =
         GotItem (Ok item) ->
             ( { model | item = Loaded item }, Cmd.none )
 
-        GotItem (Err error) ->
+        GotItem (Err _) ->
             ( { model | item = Failed }, Cmd.none )
 
         GotSession session ->

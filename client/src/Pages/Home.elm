@@ -1,7 +1,6 @@
 module Pages.Home exposing (Model, Msg, init, subscriptions, toSession, update, view)
 
 import Api
-import Browser exposing (Document)
 import Endpoint
 import Html exposing (..)
 import Html.Attributes as Attr exposing (class)
@@ -30,9 +29,12 @@ type Status a
 init : Session -> ( Model, Cmd Msg )
 init session =
     ( { session = session
-      , items = Loading
+
+      -- , items = Loading
+      , items = Failed
       }
-    , fetchItems session
+      -- , fetchItems session
+    , Cmd.none
     )
 
 
@@ -52,31 +54,26 @@ view model =
                     para t =
                         p [ class "text-red-500 m-8" ] [ text t ]
                 in
-                div [ class "flex-auto container mx-auto" ]
-                    [ para "(home) 1 failed to load items"
-                    , para "(home) 2 failed to load items"
-                    , para "(home) 3 failed to load items"
-                    , para "(home) failed to load items"
-                    , para "(home) failed to load items"
-                    , para "(home) failed to load items"
-                    , para "(home) failed to load items"
-                    , para "(home) failed to load items"
-                    , para "(home) failed to load items"
-                    , para "(home) failed to load items"
-                    , para "(home) failed to load items"
-                    , para "(home) failed to load items"
-                    , para "(home) failed to load items"
-                    , para "(home) failed to load items"
-                    , para "(home) failed to load items"
-                    , para "(home) failed to load items"
-                    , para "(home) failed to load items"
-                    , para "(home) failed to load items"
-                    , para "(home) failed to load items"
-                    , para "(home) failed to load items"
-                    , para "(home) failed to load items"
-                    , para "(home) failed to load items"
-                    , para "(home) failed to load items"
-                    , para "(home) failed to load items"
+                -- for testing
+                viewItems
+                    [ { name = "ice axe"
+                      , owner = "richard liu"
+                      , img = "//via.placeholder.com/200x200"
+                      , description = "in solid condition"
+                      , id = Item.Id "ioarns890xc"
+                      }
+                    , { name = "ice axe"
+                      , owner = "richard liu"
+                      , img = "//via.placeholder.com/200x200"
+                      , description = "in solid condition"
+                      , id = Item.Id "ioarns890xc"
+                      }
+                    , { name = "ice axe"
+                      , owner = "richard liu"
+                      , img = "//via.placeholder.com/200x200"
+                      , description = "in solid condition"
+                      , id = Item.Id "ioarns890xc"
+                      }
                     ]
     }
 
@@ -86,12 +83,14 @@ viewItems items =
     let
         viewItem : Item -> Html Msg
         viewItem item =
-            div [ Attr.style "margin" "15px" ]
-                [ h2 []
-                    [ a [ Route.href (Route.Item item.id) ] [ text item.name ] ]
-                , div [] [ img [ Attr.src item.img ] [] ]
-                , span [] [ text <| "Owner: " ++ item.owner ]
-                , p [] [ text item.description ]
+            div [ class "container m-auto flex flex-row my-8 p-4 rounded-lg bg-gray-300" ]
+                [ div [ class "flex-initial mr-4" ] [ img [ Attr.src item.img ] [] ]
+                , div [ class " flex-auto" ]
+                    [ h2 []
+                        [ a [ Route.href (Route.Item item.id) ] [ text item.name ] ]
+                    , span [] [ text <| "Owner: " ++ item.owner ]
+                    , p [] [ text item.description ]
+                    ]
                 ]
     in
     div [] <| List.map viewItem items
@@ -112,7 +111,7 @@ update msg model =
         GotItems (Ok items) ->
             ( { model | items = Loaded items }, Cmd.none )
 
-        GotItems (Err error) ->
+        GotItems (Err _) ->
             ( { model | items = Failed }, Cmd.none )
 
         GotSession session ->
