@@ -18,6 +18,7 @@ type Route
     | Login
     | Logout
     | Item Item.Id
+    | Add
 
 
 parser : Parser (Route -> a) a
@@ -27,6 +28,7 @@ parser =
         , Parser.map Login (s "login")
         , Parser.map Logout (s "logout")
         , Parser.map Item (s "item" </> Item.idParser)
+        , Parser.map Add (s "item")
         ]
 
 
@@ -72,5 +74,8 @@ routeToString page =
 
                 Item id ->
                     [ "item", Item.idToString id ]
+
+                Add ->
+                    [ "add" ]
     in
     "/" ++ String.join "/" pieces

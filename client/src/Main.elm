@@ -5,6 +5,7 @@ import Browser exposing (Document)
 import Browser.Navigation as Nav
 import Html
 import Json.Decode exposing (Value)
+import Pages.Add as Add
 import Pages.Blank as Blank
 import Pages.Home as Home
 import Pages.Item as Item
@@ -22,6 +23,7 @@ type Model
     | Home Home.Model
     | Login Login.Model
     | Item Item.Model
+    | Add Add.Model
 
 
 
@@ -66,6 +68,9 @@ view model =
         Item item ->
             viewPage WrappedPage.Item GotItemMsg (Item.view item)
 
+        Add item ->
+            viewPage WrappedPage.Other GotAddMsg (Add.view item)
+
         _ ->
             viewPage WrappedPage.Other (\_ -> NoOp) Blank.view
 
@@ -80,6 +85,7 @@ type Msg
     | GotHomeMsg Home.Msg
     | GotLoginMsg Login.Msg
     | GotItemMsg Item.Msg
+    | GotAddMsg Add.Msg
     | GotSession Session
     | NoOp
 
@@ -100,6 +106,9 @@ toSession page =
 
         Item item ->
             Item.toSession item
+
+        Add item ->
+            Add.toSession item
 
         Login login ->
             Login.toSession login
@@ -129,6 +138,10 @@ changeRouteTo maybeRoute model =
         Just (Route.Item id) ->
             Item.init session id
                 |> updateWith Item GotItemMsg
+
+        Just Route.Add ->
+            Add.init session
+                |> updateWith Add GotAddMsg
 
         Just Route.Logout ->
             ( model, Api.logout )
@@ -169,6 +182,10 @@ update msg model =
             Item.update subMsg item
                 |> updateWith Item GotItemMsg
 
+        ( GotAddMsg subMsg, Add item ) ->
+            Add.update subMsg item
+                |> updateWith Add GotAddMsg
+
         ( _, _ ) ->
             -- Disregard messages that arrived for the wrong page.
             ( model, Cmd.none )
@@ -202,6 +219,9 @@ subscriptions model =
 
         Item item ->
             Sub.map GotItemMsg (Item.subscriptions item)
+
+        Add item ->
+            Sub.map GotAddMsg (Add.subscriptions item)
 
 
 

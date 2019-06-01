@@ -52,7 +52,7 @@ view model =
                 viewItem item
 
             Failed ->
-                text "(home) failed to load items"
+                text "item page (failed to laod)"
     }
 
 
